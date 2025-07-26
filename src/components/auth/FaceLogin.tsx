@@ -71,7 +71,8 @@ export function FaceLogin() {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          const success = Math.random() > 0.3;
+          // Simulate a verification result
+          const success = Math.random() > 0.3; // 70% chance of success
           setVerificationStatus(success ? "success" : "fail");
           setIsVerifying(false);
           return 100;
@@ -83,12 +84,23 @@ export function FaceLogin() {
 
   useEffect(() => {
     if (verificationStatus === "success") {
+      toast({
+        title: "Login Successful",
+        description: "Redirecting to your dashboard...",
+        variant: "default",
+      });
       setTimeout(() => {
         setIsOpen(false);
         router.push("/dashboard");
       }, 1500);
+    } else if (verificationStatus === "fail") {
+       toast({
+        title: "Verification Failed",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     }
-  }, [verificationStatus, router]);
+  }, [verificationStatus, router, toast]);
   
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -105,7 +117,14 @@ export function FaceLogin() {
         </DialogHeader>
         <div className="py-4">
           <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center">
-            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+            {hasCameraPermission ? (
+              <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-muted-foreground">
+                  <AlertTriangle className="h-10 w-10 mb-2" />
+                  <p>Camera not available</p>
+              </div>
+            )}
             <div className="absolute inset-0 border-4 border-dashed border-gray-500 rounded-lg"></div>
 
             {isVerifying && !verificationStatus && (
@@ -119,7 +138,7 @@ export function FaceLogin() {
                 <p className="text-white font-semibold mt-2">Verified</p>
               </div>
             )}
-            {verificationStatus === "fail" && (
+            {verificationStatus === "fail" && !isVerifying && (
               <div className="absolute inset-0 bg-red-500/80 flex flex-col items-center justify-center">
                 <XCircle className="h-16 w-16 text-white" />
                 <p className="text-white font-semibold mt-2">Verification Failed</p>
