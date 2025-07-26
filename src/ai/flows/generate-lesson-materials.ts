@@ -9,8 +9,12 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {googleAI} from '@genkit-ai/googleai';
 import {z} from 'genkit';
 import wav from 'wav';
+import * as fs from 'fs';
+import {Readable} from 'stream';
+import {MediaPart} from 'genkit';
 
 const GenerateLessonMaterialsInputSchema = z.object({
   lessonContentText: z.string().optional().describe('The lesson content as text.'),
@@ -18,13 +22,13 @@ const GenerateLessonMaterialsInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      "The lesson content as an image, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "The lesson content as an image, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'.",
     ),
   lessonContentVoice: z
     .string()
     .optional()
     .describe(
-      "The lesson content as voice, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "The lesson content as voice, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'.",
     ),
   localizationLanguage: z.string().describe('The language to localize the generated materials to.'),
 });
@@ -34,17 +38,17 @@ const GenerateLessonMaterialsOutputSchema = z.object({
   animatedPPTDataUri: z
     .string()
     .describe(
-      'The animated PPT as a data URI that must include a MIME type and use Base64 encoding. Expected format: data:<mimetype>;base64,<encoded_data>.'
+      'The animated PPT as a data URI that must include a MIME type and use Base64 encoding. Expected format: data:<mimetype>;base64,<encoded_data>.',
     ),
   aiGeneratedVideoDataUri: z
     .string()
     .describe(
-      'The AI-generated video explaining the lesson, as a data URI that must include a MIME type and use Base64 encoding. Expected format: data:<mimetype>;base64,<encoded_data>.'
+      'The AI-generated video explaining the lesson, as a data URI that must include a MIME type and use Base64 encoding. Expected format: data:<mimetype>;base64,<encoded_data>.',
     ),
   localizedQuizDataUri: z
     .string()
     .describe(
-      'The localized quiz as a data URI that must include a MIME type and use Base64 encoding. Expected format: data:<mimetype>;base64,<encoded_data>.'
+      'The localized quiz as a data URI that must include a MIME type and use Base64 encoding. Expected format: data:<mimetype>;base64,<encoded_data>.',
     ),
 });
 export type GenerateLessonMaterialsOutput = z.infer<typeof GenerateLessonMaterialsOutputSchema>;
@@ -83,7 +87,7 @@ const generateLessonMaterialsFlow = ai.defineFlow(
     inputSchema: GenerateLessonMaterialsInputSchema,
     outputSchema: GenerateLessonMaterialsOutputSchema,
   },
-  async input => {
+  async (input) => {
     // Step 1: Generate the animated PPT.
     const pptPrompt = `Create an animated PPT based on the lesson content. Return it as a base64 encoded data URI with content type application/vnd.ms-powerpoint.
      Follow these instructions very carefully:
@@ -98,20 +102,55 @@ const generateLessonMaterialsFlow = ai.defineFlow(
     const animatedPPTDataUri = pptResult.text!;
 
     // Step 2: Generate the AI-generated video.
-    // This will generate an image and return it as a data URI.
-    const imageGenerationResult = await ai.generate({
-        model: 'googleai/gemini-2.0-flash-preview-image-generation',
-        prompt: 'Generate an image that visually represents the following lesson content: ' + input.lessonContentText,
-        config: {
-            responseModalities: ['TEXT', 'IMAGE'],
-        },
+    let {operation} = await ai.generate({
+      model: googleAI.model('veo-2.0-generate-001'),
+      prompt: `A short video about: ${input.lessonContentText}`,
+      config: {
+        durationSeconds: 5,
+        aspectRatio: '16:9',
+      },
     });
 
-    const aiGeneratedVideoDataUri = imageGenerationResult.media.url!;
+    if (!operation) {
+      throw new Error('Expected the model to return an operation');
+    }
+
+    // Wait until the operation completes.
+    while (!operation.done) {
+      operation = await ai.checkOperation(operation);
+      // Sleep for 5 seconds before checking again.
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+
+    if (operation.error) {
+      throw new Error('failed to generate video: ' + operation.error.message);
+    }
+
+    const video = operation.output?.message?.content.find((p) => !!p.media);
+    if (!video) {
+      throw new Error('Failed to find the generated video');
+    }
+
+    const fetch = (await import('node-fetch')).default;
+    const videoDownloadResponse = await fetch(
+      `${video.media!.url}&key=${process.env.GEMINI_API_KEY}`
+    );
+    if (
+      !videoDownloadResponse ||
+      videoDownloadResponse.status !== 200 ||
+      !videoDownloadResponse.body
+    ) {
+      throw new Error('Failed to fetch video');
+    }
+
+    const videoBuffer = await videoDownloadResponse.arrayBuffer();
+    const aiGeneratedVideoDataUri = `data:video/mp4;base64,${Buffer.from(
+      videoBuffer
+    ).toString('base64')}`;
 
 
     // Step 3: Generate the localized quiz.
-    const quizPrompt = `Create a localized quiz in {{{localizationLanguage}}} based on the lesson content.  Return the quiz as a base64 encoded data URI with content type application/json.`
+    const quizPrompt = `Create a localized quiz in {{{localizationLanguage}}} based on the lesson content.  Return the quiz as a base64 encoded data URI with content type application/json.`;
     const quizResult = await ai.generate({
       prompt: quizPrompt,
       model: 'googleai/gemini-2.0-flash',
