@@ -61,18 +61,17 @@ const generateLessonMaterialsFlow = ai.defineFlow(
   },
   async (input) => {
     const animatedPPTResponse = await ai.generate({
-      prompt: `Create an animated PPT based on the provided lesson content. Return it as a base64 encoded data URI with content type application/vnd.ms-powerpoint.
+      prompt: `Create an animated PPT based on the provided lesson content.
         Follow these instructions very carefully:
         - DO NOT use real PPT format. Instead, return an HTML file with javascript that recreates PPT animations.
         - Use very short, and very modern, JS code.
-        - Make sure the final result is a base64 encoded file.
         Lesson content: ${input.lessonContentText || ''}
       `,
       model: ai.model('googleai/gemini-2.0-flash'),
     });
 
     const localizedQuizResponse = await ai.generate({
-      prompt: `Create a localized quiz in ${input.localizationLanguage} based on the lesson content. Return the quiz as a base64 encoded data URI with content type application/json.
+      prompt: `Create a localized quiz in ${input.localizationLanguage} based on the lesson content. Return the quiz as a JSON object.
         Lesson content: ${input.lessonContentText || ''}
       `,
       model: ai.model('googleai/gemini-2.0-flash'),
@@ -123,22 +122,22 @@ const generateLessonMaterialsFlow = ai.defineFlow(
     
     if (!videoDataUri) {
       // Fallback to a placeholder if video generation fails
-      const imageResult = await ai.generate({
+      const {media} = await ai.generate({
         model: ai.model('googleai/gemini-2.0-flash-preview-image-generation'),
         prompt: `A simple, abstract, and modern image that represents: ${input.lessonContentText}. The image should be visually appealing and suitable for a lesson presentation.`,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
         },
       });
-      if (imageResult.media?.url) {
-        videoDataUri = imageResult.media.url; // Using image data URI as a fallback
+      if (media?.url) {
+        videoDataUri = media.url; // Using image data URI as a fallback
       }
     }
 
     return {
-      animatedPPTDataUri: animatedPPTResponse.text,
+      animatedPPTDataUri: `data:text/html;base64,${Buffer.from(animatedPPTResponse.text, 'utf8').toString('base64')}`,
       aiGeneratedVideoDataUri: videoDataUri,
-      localizedQuizDataUri: localizedQuizResponse.text,
+      localizedQuizDataUri: `data:application/json;base64,${Buffer.from(localizedQuizResponse.text, 'utf8').toString('base64')}`,
     };
   }
 );
