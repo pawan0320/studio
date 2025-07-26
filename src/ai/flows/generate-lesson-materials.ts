@@ -119,10 +119,10 @@ const generateLessonMaterialsFlow = ai.defineFlow(
       }
     } catch (e) {
       console.error('Video generation failed, providing placeholder', e);
+      // Fallback to a placeholder if video generation fails
     }
     
     if (!videoDataUri) {
-      // Fallback to a placeholder if video generation fails
       const {media} = await ai.generate({
         model: googleAI.model('gemini-2.0-flash-preview-image-generation'),
         prompt: `A simple, abstract, and modern image that represents: ${input.lessonContentText}. The image should be visually appealing and suitable for a lesson presentation.`,
