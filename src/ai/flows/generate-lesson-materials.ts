@@ -124,7 +124,7 @@ const generateLessonMaterialsFlow = ai.defineFlow(
     
     if (!videoDataUri) {
       const {media} = await ai.generate({
-        model: googleAI.model('gemini-2.0-flash-preview-image-generation'),
+        model: 'googleai/gemini-2.0-flash-preview-image-generation',
         prompt: `A simple, abstract, and modern image that represents: ${input.lessonContentText}. The image should be visually appealing and suitable for a lesson presentation.`,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
