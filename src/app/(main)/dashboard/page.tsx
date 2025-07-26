@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, Users, BookOpen, BarChart, AlertTriangle, PlusCircle } from "lucide-react";
+import { ArrowUpRight, Users, BookOpen, BarChart, AlertTriangle, PlusCircle, FileText, Calendar } from "lucide-react";
 import Link from "next/link";
 import { Bar, BarChart as BarChartComponent, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Line, LineChart } from "recharts";
 import { studentData, performanceChartData, engagementChartData } from "@/lib/data";
