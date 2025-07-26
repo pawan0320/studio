@@ -9,7 +9,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {googleAI} from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 const GenerateLessonMaterialsInputSchema = z.object({
@@ -60,27 +59,28 @@ const generateLessonMaterialsFlow = ai.defineFlow(
     outputSchema: GenerateLessonMaterialsOutputSchema,
   },
   async (input) => {
-    const animatedPPTResponse = await ai.generate({
-      prompt: `Create an animated PPT based on the provided lesson content.
-        Follow these instructions very carefully:
-        - DO NOT use real PPT format. Instead, return an HTML file with javascript that recreates PPT animations.
-        - Use very short, and very modern, JS code.
-        Lesson content: ${input.lessonContentText || ''}
-      `,
-      model: ai.model('googleai/gemini-2.0-flash'),
-    });
-
-    const localizedQuizResponse = await ai.generate({
-      prompt: `Create a localized quiz in ${input.localizationLanguage} based on the lesson content. Return the quiz as a JSON object.
-        Lesson content: ${input.lessonContentText || ''}
-      `,
-      model: ai.model('googleai/gemini-2.0-flash'),
-    });
+    const [animatedPPTResponse, localizedQuizResponse] = await Promise.all([
+      ai.generate({
+        prompt: `Create an animated PPT based on the provided lesson content.
+          Follow these instructions very carefully:
+          - DO NOT use real PPT format. Instead, return an HTML file with javascript that recreates PPT animations.
+          - Use very short, and very modern, JS code.
+          Lesson content: ${input.lessonContentText || ''}
+        `,
+        model: 'googleai/gemini-2.0-flash',
+      }),
+      ai.generate({
+        prompt: `Create a localized quiz in ${input.localizationLanguage} based on the lesson content. Return the quiz as a JSON object.
+          Lesson content: ${input.lessonContentText || ''}
+        `,
+        model: 'googleai/gemini-2.0-flash',
+      })
+    ]);
 
     let videoDataUri = '';
     try {
       let {operation} = await ai.generate({
-        model: ai.model('veo-2.0-generate-001'),
+        model: 'veo-2.0-generate-001',
         prompt: [
           {
             text: `A short video about: ${input.lessonContentText}`,
@@ -123,7 +123,7 @@ const generateLessonMaterialsFlow = ai.defineFlow(
     if (!videoDataUri) {
       // Fallback to a placeholder if video generation fails
       const {media} = await ai.generate({
-        model: ai.model('googleai/gemini-2.0-flash-preview-image-generation'),
+        model: 'googleai/gemini-2.0-flash-preview-image-generation',
         prompt: `A simple, abstract, and modern image that represents: ${input.lessonContentText}. The image should be visually appealing and suitable for a lesson presentation.`,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],

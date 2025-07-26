@@ -56,13 +56,7 @@ Quiz Scores: {{{quizScores}}}
 Assignment Scores: {{{assignmentScores}}}
 
 Evaluate the student's comprehension, participation, and feedback.
-Provide adaptive suggestions for tailored teaching aids and generate student questions, insights, and engagement strategies for mixed-grade classrooms.
-
-Comprehension Level:
-Suggested Teaching Aids:
-Engagement Strategies:
-Student Questions:
-Insights: `,
+Provide adaptive suggestions for tailored teaching aids and generate student questions, insights, and engagement strategies for mixed-grade classrooms.`,
 });
 
 const analyzeStudentPerformanceFlow = ai.defineFlow(
