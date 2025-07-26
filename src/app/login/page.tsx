@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { BookOpen, Fingerprint } from "lucide-react";
 import Link from "next/link";
 import { FaceLogin } from "@/components/auth/FaceLogin";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function LoginPage() {
   return (
@@ -28,20 +31,42 @@ export default function LoginPage() {
               Access your dashboard to manage your classes.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="teacher@example.com" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required />
-            </div>
-          </CardContent>
+          <Tabs defaultValue="email" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="email">Email</TabsTrigger>
+              <TabsTrigger value="phone">Phone OTP</TabsTrigger>
+            </TabsList>
+            <TabsContent value="email">
+              <CardContent className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" placeholder="teacher@example.com" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" type="password" required />
+                </div>
+              </CardContent>
+            </TabsContent>
+            <TabsContent value="phone">
+                <CardContent className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <Input id="phone" type="tel" placeholder="+91 XXXXX XXXXX" required />
+                    </div>
+                     <Button className="w-full" variant="outline">Send OTP</Button>
+                </CardContent>
+            </TabsContent>
+          </Tabs>
+
           <CardFooter className="flex flex-col gap-4">
             <Link href="/dashboard" className="w-full">
               <Button className="w-full">Login</Button>
             </Link>
+            <div className="text-center text-sm">
+                Don't have an account?{" "}
+                <Button variant="link" className="p-0 h-auto">Sign Up</Button>
+            </div>
             <div className="relative w-full">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />

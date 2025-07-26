@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,15 +12,55 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Fingerprint, CheckCircle, XCircle } from "lucide-react";
-import Image from "next/image";
+import { useToast } from "@/hooks/use-toast";
+import { Fingerprint, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 export function FaceLogin() {
+  const [isOpen, setIsOpen] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<"success" | "fail" | null>(null);
   const [progress, setProgress] = useState(0);
+  const [hasCameraPermission, setHasCameraPermission] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const router = useRouter();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (isOpen) {
+      const getCameraPermission = async () => {
+        try {
+          // Reset states on open
+          setVerificationStatus(null);
+          setProgress(0);
+          setIsVerifying(false);
+
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          setHasCameraPermission(true);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (error) {
+          console.error("Error accessing camera:", error);
+          setHasCameraPermission(false);
+          toast({
+            variant: "destructive",
+            title: "Camera Access Denied",
+            description: "Please enable camera permissions in your browser settings.",
+          });
+          setIsOpen(false);
+        }
+      };
+      getCameraPermission();
+    } else {
+      // Cleanup when dialog closes
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    }
+  }, [isOpen, toast]);
 
   const handleVerify = () => {
     setIsVerifying(true);
@@ -31,8 +71,7 @@ export function FaceLogin() {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          // Simulate API call result
-          const success = Math.random() > 0.3; // 70% chance of success
+          const success = Math.random() > 0.3;
           setVerificationStatus(success ? "success" : "fail");
           setIsVerifying(false);
           return 100;
@@ -41,21 +80,18 @@ export function FaceLogin() {
       });
     }, 200);
   };
-  
+
   useEffect(() => {
-    if (verificationStatus === 'success') {
+    if (verificationStatus === "success") {
       setTimeout(() => {
-        router.push('/dashboard');
-      }, 1000);
+        setIsOpen(false);
+        router.push("/dashboard");
+      }, 1500);
     }
   }, [verificationStatus, router]);
-
+  
   return (
-    <Dialog onOpenChange={() => {
-        setIsVerifying(false);
-        setVerificationStatus(null);
-        setProgress(0);
-    }}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full">
           <Fingerprint className="mr-2 h-4 w-4" />
@@ -65,36 +101,42 @@ export function FaceLogin() {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="font-headline">Face Verification</DialogTitle>
-          <DialogDescription>
-            Center your face in the camera to log in.
-          </DialogDescription>
+          <DialogDescription>Center your face in the camera to log in.</DialogDescription>
         </DialogHeader>
         <div className="py-4">
-          <div className="relative w-full h-64 bg-black rounded-lg overflow-hidden flex items-center justify-center">
-            <Image src="https://placehold.co/400x300.png" alt="Webcam feed" layout="fill" objectFit="cover" data-ai-hint="person face" />
+          <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center">
+            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
             <div className="absolute inset-0 border-4 border-dashed border-gray-500 rounded-lg"></div>
-            {isVerifying && (
-                <div className="absolute bottom-4 left-4 right-4">
-                    <Progress value={progress} className="w-full" />
-                </div>
+
+            {isVerifying && !verificationStatus && (
+              <div className="absolute bottom-4 left-4 right-4 z-10">
+                <Progress value={progress} className="w-full" />
+              </div>
             )}
             {verificationStatus === "success" && (
-                <div className="absolute inset-0 bg-green-500/50 flex flex-col items-center justify-center">
-                    <CheckCircle className="h-16 w-16 text-white" />
-                    <p className="text-white font-semibold mt-2">Verified</p>
-                </div>
+              <div className="absolute inset-0 bg-green-500/80 flex flex-col items-center justify-center">
+                <CheckCircle className="h-16 w-16 text-white" />
+                <p className="text-white font-semibold mt-2">Verified</p>
+              </div>
             )}
             {verificationStatus === "fail" && (
-                <div className="absolute inset-0 bg-red-500/50 flex flex-col items-center justify-center">
-                    <XCircle className="h-16 w-16 text-white" />
-                    <p className="text-white font-semibold mt-2">Verification Failed</p>
-                </div>
+              <div className="absolute inset-0 bg-red-500/80 flex flex-col items-center justify-center">
+                <XCircle className="h-16 w-16 text-white" />
+                <p className="text-white font-semibold mt-2">Verification Failed</p>
+              </div>
             )}
           </div>
+          {!hasCameraPermission && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Camera Access Required</AlertTitle>
+              <AlertDescription>Please allow camera access to use this feature.</AlertDescription>
+            </Alert>
+          )}
         </div>
         <DialogFooter>
-          <Button onClick={handleVerify} disabled={isVerifying || verificationStatus === 'success'}>
-            {isVerifying ? 'Verifying...' : verificationStatus === 'fail' ? 'Try Again' : verificationStatus === 'success' ? 'Redirecting...' : 'Verify'}
+          <Button onClick={handleVerify} disabled={isVerifying || verificationStatus === "success" || !hasCameraPermission}>
+            {isVerifying ? "Verifying..." : verificationStatus === "fail" ? "Try Again" : verificationStatus === "success" ? "Redirecting..." : "Verify Identity"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Sahayak',
-  description: 'AI Assistant for Teachers',
+  title: 'Sahayak – Empowering Teacher AI Assistant for Multi-Grade Classrooms',
+  description: 'An AI-powered educational platform that empowers teachers by streamlining lesson prep, enhancing student engagement, and tracking performance in real time.',
 };
 
 export default function RootLayout({
