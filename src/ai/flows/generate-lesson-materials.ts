@@ -11,7 +11,6 @@
 import {ai} from '@/ai/genkit';
 import {googleAI} from '@genkit-ai/googleai';
 import {z} from 'genkit';
-import {generate} from 'genkit/generate';
 
 const GenerateLessonMaterialsInputSchema = z.object({
   lessonContentText: z.string().optional().describe('The lesson content as text.'),
@@ -61,7 +60,7 @@ const generateLessonMaterialsFlow = ai.defineFlow(
     outputSchema: GenerateLessonMaterialsOutputSchema,
   },
   async (input) => {
-    const animatedPPTDataUri = await generate({
+    const animatedPPTResponse = await ai.generate({
       prompt: `Create an animated PPT based on the provided lesson content. Return it as a base64 encoded data URI with content type application/vnd.ms-powerpoint.
         Follow these instructions very carefully:
         - DO NOT use real PPT format. Instead, return an HTML file with javascript that recreates PPT animations.
@@ -72,7 +71,7 @@ const generateLessonMaterialsFlow = ai.defineFlow(
       model: 'googleai/gemini-2.0-flash',
     });
 
-    const localizedQuizDataUri = await generate({
+    const localizedQuizResponse = await ai.generate({
       prompt: `Create a localized quiz in ${input.localizationLanguage} based on the lesson content. Return the quiz as a base64 encoded data URI with content type application/json.
         Lesson content: ${input.lessonContentText || ''}
       `,
@@ -136,9 +135,9 @@ const generateLessonMaterialsFlow = ai.defineFlow(
     }
 
     return {
-      animatedPPTDataUri: animatedPPTDataUri.text(),
+      animatedPPTDataUri: animatedPPTResponse.text,
       aiGeneratedVideoDataUri: videoDataUri,
-      localizedQuizDataUri: localizedQuizDataUri.text(),
+      localizedQuizDataUri: localizedQuizResponse.text,
     };
   }
 );
