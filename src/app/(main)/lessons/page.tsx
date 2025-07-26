@@ -1,10 +1,12 @@
+"use client";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FileUp, Mic, Clapperboard, File, Book, BrainCircuit, BarChart, Image as ImageIcon } from "lucide-react";
+import { FileUp, Mic, Clapperboard, File, Book, BrainCircuit, BarChart, Video } from "lucide-react";
 
 // Mock form for generating lesson materials
 function GenerateMaterialsForm() {
@@ -93,7 +95,7 @@ export default function LessonsPage() {
                       </div>
                     </li>
                     <li className="flex items-start gap-3">
-                      <ImageIcon className="h-6 w-6 text-accent mt-1" />
+                      <Video className="h-6 w-6 text-accent mt-1" />
                       <div>
                         <h4 className="font-medium">AI-Generated Video</h4>
                         <p className="text-sm text-muted-foreground">A short video to make learning more dynamic.</p>

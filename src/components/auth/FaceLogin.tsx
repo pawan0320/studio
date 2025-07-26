@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,6 +20,7 @@ export function FaceLogin() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<"success" | "fail" | null>(null);
   const [progress, setProgress] = useState(0);
+  const router = useRouter();
 
   const handleVerify = () => {
     setIsVerifying(true);
@@ -39,6 +41,14 @@ export function FaceLogin() {
       });
     }, 200);
   };
+  
+  useEffect(() => {
+    if (verificationStatus === 'success') {
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1000);
+    }
+  }, [verificationStatus, router]);
 
   return (
     <Dialog onOpenChange={() => {
@@ -84,7 +94,7 @@ export function FaceLogin() {
         </div>
         <DialogFooter>
           <Button onClick={handleVerify} disabled={isVerifying || verificationStatus === 'success'}>
-            {isVerifying ? 'Verifying...' : verificationStatus === 'fail' ? 'Try Again' : 'Verify'}
+            {isVerifying ? 'Verifying...' : verificationStatus === 'fail' ? 'Try Again' : verificationStatus === 'success' ? 'Redirecting...' : 'Verify'}
           </Button>
         </DialogFooter>
       </DialogContent>
