@@ -98,49 +98,17 @@ const generateLessonMaterialsFlow = ai.defineFlow(
     const animatedPPTDataUri = pptResult.text!;
 
     // Step 2: Generate the AI-generated video.
-    // Assuming we can generate a video from the content description.
-    // This may require the use of an image generation model, or a video generation model.
-
-    let { operation } = await ai.generate({
-      model: 'googleai/veo-2.0-generate-001',
-      prompt: 'Generate a video explaining the lesson visually.',
-      config: {
-        durationSeconds: 5,
-        aspectRatio: '16:9',
-      },
+    // This will generate an image and return it as a data URI.
+    const imageGenerationResult = await ai.generate({
+        model: 'googleai/gemini-2.0-flash-preview-image-generation',
+        prompt: 'Generate an image that visually represents the following lesson content: ' + input.lessonContentText,
+        config: {
+            responseModalities: ['TEXT', 'IMAGE'],
+        },
     });
 
-    if (!operation) {
-      throw new Error('Expected the model to return an operation');
-    }
+    const aiGeneratedVideoDataUri = imageGenerationResult.media.url!;
 
-    while (!operation.done) {
-      operation = await ai.checkOperation(operation);
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-    }
-
-    if (operation.error) {
-      throw new Error('failed to generate video: ' + operation.error.message);
-    }
-
-    const video = operation.output?.message?.content.find((p) => !!p.media);
-    if (!video) {
-      throw new Error('Failed to find the generated video');
-    }
-
-    const fetch = (await import('node-fetch')).default;
-    const videoDownloadResponse = await fetch(
-        `${video.media!.url}&key=${process.env.GEMINI_API_KEY}`
-    );
-    if (
-        !videoDownloadResponse ||
-        videoDownloadResponse.status !== 200 ||
-        !videoDownloadResponse.body
-    ) {
-      throw new Error('Failed to fetch video');
-    }
-    const aiGeneratedVideoBase64 = Buffer.from(await videoDownloadResponse.arrayBuffer()).toString('base64');
-    const aiGeneratedVideoDataUri = `data:video/mp4;base64,${aiGeneratedVideoBase64}`;
 
     // Step 3: Generate the localized quiz.
     const quizPrompt = `Create a localized quiz in {{{localizationLanguage}}} based on the lesson content.  Return the quiz as a base64 encoded data URI with content type application/json.`
