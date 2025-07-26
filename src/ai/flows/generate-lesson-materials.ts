@@ -18,7 +18,7 @@ const GenerateLessonMaterialsInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      "The lesson content as an image, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "The lesson content as an image, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'"
     ),
   lessonContentVoice: z
     .string()
@@ -68,20 +68,20 @@ const generateLessonMaterialsFlow = ai.defineFlow(
         - Make sure the final result is a base64 encoded file.
         Lesson content: ${input.lessonContentText || ''}
       `,
-      model: 'googleai/gemini-2.0-flash',
+      model: ai.model('googleai/gemini-2.0-flash'),
     });
 
     const localizedQuizResponse = await ai.generate({
       prompt: `Create a localized quiz in ${input.localizationLanguage} based on the lesson content. Return the quiz as a base64 encoded data URI with content type application/json.
         Lesson content: ${input.lessonContentText || ''}
       `,
-      model: 'googleai/gemini-2.0-flash',
+      model: ai.model('googleai/gemini-2.0-flash'),
     });
 
     let videoDataUri = '';
     try {
       let {operation} = await ai.generate({
-        model: googleAI.model('veo-2.0-generate-001'),
+        model: ai.model('veo-2.0-generate-001'),
         prompt: [
           {
             text: `A short video about: ${input.lessonContentText}`,
@@ -124,14 +124,15 @@ const generateLessonMaterialsFlow = ai.defineFlow(
     if (!videoDataUri) {
       // Fallback to a placeholder if video generation fails
       const imageResult = await ai.generate({
-        model: 'googleai/gemini-2.0-flash-preview-image-generation',
+        model: ai.model('googleai/gemini-2.0-flash-preview-image-generation'),
         prompt: `A simple, abstract, and modern image that represents: ${input.lessonContentText}. The image should be visually appealing and suitable for a lesson presentation.`,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
         },
       });
-      const image = imageResult.media;
-      videoDataUri = image.url; // Using image data URI as a fallback
+      if (imageResult.media?.url) {
+        videoDataUri = imageResult.media.url; // Using image data URI as a fallback
+      }
     }
 
     return {
