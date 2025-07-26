@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 
 const GenerateLessonMaterialsInputSchema = z.object({
   lessonContentText: z.string().optional().describe('The lesson content as text.'),
@@ -67,20 +68,20 @@ const generateLessonMaterialsFlow = ai.defineFlow(
           - Use very short, and very modern, JS code.
           Lesson content: ${input.lessonContentText || ''}
         `,
-        model: 'googleai/gemini-2.0-flash',
+        model: googleAI.model('gemini-2.0-flash'),
       }),
       ai.generate({
         prompt: `Create a localized quiz in ${input.localizationLanguage} based on the lesson content. Return the quiz as a JSON object.
           Lesson content: ${input.lessonContentText || ''}
         `,
-        model: 'googleai/gemini-2.0-flash',
+        model: googleAI.model('gemini-2.0-flash'),
       })
     ]);
 
     let videoDataUri = '';
     try {
       let {operation} = await ai.generate({
-        model: 'veo-2.0-generate-001',
+        model: googleAI.model('veo-2.0-generate-001'),
         prompt: [
           {
             text: `A short video about: ${input.lessonContentText}`,
@@ -123,7 +124,7 @@ const generateLessonMaterialsFlow = ai.defineFlow(
     if (!videoDataUri) {
       // Fallback to a placeholder if video generation fails
       const {media} = await ai.generate({
-        model: 'googleai/gemini-2.0-flash-preview-image-generation',
+        model: googleAI.model('gemini-2.0-flash-preview-image-generation'),
         prompt: `A simple, abstract, and modern image that represents: ${input.lessonContentText}. The image should be visually appealing and suitable for a lesson presentation.`,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
