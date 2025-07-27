@@ -45,8 +45,43 @@ studio/
 ├── public/      # Static assets
 └── styles/      # Global styles
 
----
+Getting Started
 
+bash
+# 1. Clone repository
+git clone https://github.com/pawan0320/studio.git
+
+# 2. Install dependencies
+npm install
+
+# 3. Configure environment
+cp .env.example .env.local
+
+# 4. Start development server
+npm run dev
+
+Environment Variables
+
+.env.local template:
+
+env
+NEXTAUTH_SECRET=your_random_secret_key
+NEXTAUTH_URL=http://localhost:3000
+DATABASE_URL=your_postgres_connection_string
+UPLOAD_PATH=./public/uploads
+
+Deployment
+
+https://vercel.com/button
+
+🧪 Testing
+
+bash
+# Run unit tests
+npm test
+
+# Run end-to-end tests
+npm run test:e2e
 ## 2. CODE COMMENTING IMPROVEMENTS
 
 ### File: `context/AuthContext.js`
